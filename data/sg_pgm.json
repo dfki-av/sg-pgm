@@ -1,0 +1,132 @@
+{
+    "VERBOSE": false,
+
+    "scene_graph_net":{
+      "node_input_dim": 164,
+      "edge_input_dim": 82,
+      "input_dim": 32,
+      "num_layers": 3,
+      "node_feat_channels": [64, 64, 128, 256],
+      "output_dim": 256,
+      "feature_dim": 32,
+      "skip_connection": true,
+      "pred_subgraph": false,
+      "gnn_layer_num": 3,
+      "gnn_type": "GATv2",
+      "sinkhorn_iters": 20,
+      "sinkhorn_epsilon": 1.0e-10
+    },
+
+    "model":{
+      "ground_truth_matching_radius": 0.05,
+      "num_points_in_patch": 64,
+      "num_sinkhorn_iterations": 100
+    },
+
+    "backbone":{
+      "num_stages": 4,
+      "init_voxel_size": 0.025,
+      "kernel_size": 15,
+      "base_radius": 2.5,
+      "base_sigma": 2.0,
+      "init_radius": 0.0625, 
+      "init_sigma": 0.05,
+      "group_norm": 32,
+      "input_dim": 1,
+      "init_dim": 64,
+      "output_dim": 256
+    },
+    
+    "geotransformer":{
+      "input_dim":1024,
+      "hidden_dim":256,
+      "output_dim":256,
+      "num_heads": 4,
+      "blocks": ["self", "cross", "self", "cross", "self", "cross"],
+      "sigma_d": 0.2,
+      "sigma_a": 15,
+      "angle_k": 3,
+      "reduction_a": "max"
+    },
+
+    "coarse_matching":{
+      "num_targets": 128,
+      "overlap_threshold": 0.1,
+      "num_correspondences": 256,
+      "dual_normalization": true
+    },
+
+    "fine_matching":{
+      "topk": 3,
+      "acceptance_radius": 0.1,
+      "mutual": true,
+      "confidence_threshold": 0.05,
+      "use_dustbin": false,
+      "use_global_score": false,
+      "correspondence_threshold": 3,
+      "correspondence_limit": null,
+      "num_refinement_steps":5
+
+    },
+
+    "coarse_loss":{
+      "positive_margin": 0.1,
+      "negative_margin": 1.4,
+      "positive_optimal": 0.1,
+      "negative_optimal": 1.4,
+      "log_scale": 24,
+      "positive_overlap": 0.1
+    },
+
+    "fine_loss": {
+      "positive_radius": 0.05
+    },
+
+    "loss":{
+      "weight_coarse_loss": 1.0,
+      "weight_fine_loss": 1.0,
+      "weight_topk_loss": 10.0
+    },
+
+    "eval":{
+      "acceptance_overlap":0.0,
+      "acceptance_radius": 0.1,
+      "inlier_ratio_threshold": 0.05,
+      "rmse_threshold": 0.2,
+      "rre_threshold": 15.0,
+      "rte_threshold":0.3,
+      "overlap_threshold": 0.375,
+      "overlap_threshold_at3": 0.45
+    },
+    "sinkhorn":{
+      "num_iteration": 20,
+      "lambd": 1e-3
+    },
+
+    "AFA":{
+      "K_FACTOR": 50,
+      "UNIV_SIZE": 128,
+      "REGRESSION": true,
+      "HEAD_NUM": 8,
+      "KQV_DIM": 16,
+      "FF_HIDDEN_DIM": 16,
+      "MS_HIDDEN_DIM": 8,
+      "MS_LAYER1_INIT": 10,
+      "MS_LAYER2_INIT": 10,
+      "MEAN_K": true
+
+    },
+
+    "dataset": {
+      "root": "/home/xie/Documents/datasets/3RScan",
+      "max_c_points": 1500,
+      "neighbor_limits": [41, 24, 30, 34]
+    },
+
+    "model_variant":{
+      "pt_fusion": true,
+      "sg_fusion": true,
+      "soft_topk": true
+    }
+
+}

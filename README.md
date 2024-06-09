@@ -18,7 +18,7 @@ conda install pytorch torchvision pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install pyg -c pyg
 pip install -r requirements.txt
 
-# Install the grid sampling ext for points and semantic map
+# Install the grid sampling ext for points and semantic labels
 python setup.py build develop
 ```
 
@@ -28,13 +28,13 @@ It comes later...
 ## Inference for 3D Scene Graph Alignment and Downstream Tasks
 ```
 # Test Alignment and Registration with Transformaitn Augmentation 
-python scripts/inference_reg.py --trained_model=./weights/the_weights.pth --ptfusion --sgfuison --topk --rand_trans
+python scripts/inference_reg.py --trained_model=./weights/the_weights.pth --ptfusion --sgfusion --topk --rand_trans
 
 # Test Overlap Checking
-python scripts/inference_overlap.py --trained_model=./weights/the_weights.pth --ptfusion --sgfuison --topk
+python scripts/inference_overlap.py --trained_model=./weights/the_weights.pth --ptfusion --sgfusion --topk
 
 # Test on Scene with Dynamics
-python scripts/inference_dynamics.py --trained_model=./weights/the_weights.pth --ptfusion --sgfuison --topk
+python scripts/inference_dynamics.py --trained_model=./weights/the_weights.pth --ptfusion --sgfusion --topk
 ```
 
 ## Train Network with Reproducibility
