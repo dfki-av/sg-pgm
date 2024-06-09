@@ -4,19 +4,19 @@ import argparse
 import torch
 import torch.utils.data
 
-from temp.net_pointnet import SGPGM_GeoTransformer
+from sg_pgm import SGPGM_PointNet
 from data.config import Config
 from data.datasets import get_datasets, PairData, Scan3RDataset_pointnet
 from data.stack_mode import get_dataloader_pointnet
 import data.torch_utils as torch_utils 
-from datapipes.base_pipeline import BasePipelineCreator
 
 from utils.util import MovingAverage
 from utils.logger import SGMatchLogger
 from utils.set_seed import set_reproducibility
 from utils.pointcloud import *
-from data.torch_utils import to_cuda, release_cuda
+import data.torch_utils as torch_utils
 from modules.loss.loss import OverallLoss, Evaluator
+from utils.net_args import parse_args
 
 loss_types = ['loss','s_l', 'k_l'] 
 eval_types = ['Overlap', 'IR', 'CCD', 'RRE', 'RTE', 'FMR', 'RMSE', 'RR', 'CorrS',
@@ -82,11 +82,10 @@ def set_lr(optimizer, new_lr):
     global cur_lr
     cur_lr = new_lr
 
-def train(cfg):
+def train(args, cfg):
     # Initialize Network, Loss and Optimizer
-    model = SGPGM_GeoTransformer(cfg).cuda()
-    #model.load_pretrained(args.pretrained_3dmatch)
-    #model.lock_geotr()
+    model = SGPGM_PointNet(cfg).cuda()
+
     criterion = OverallLoss(cfg=cfg)
     evaluator = Evaluator(cfg=cfg, eval_coarse=False, eval_geo=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -126,9 +125,6 @@ def train(cfg):
             if epoch % args.decay_epochs == 0 and epoch >1:
                 set_lr(optimizer, args.lr* 0.1**(epoch//args.decay_epochs))
             for idx, batched_data in enumerate(train_loader):
-                #print(batched_data.keys())
-                #print(batched_data['sg'])
-                #print(batched_data['ref_points'].shape, batched_data['src_points'].shape)
                 # Warm up by linearly interpolating the learning rate from some smaller value
                 if args.warmup_until > 0 and iteration <= args.warmup_until:
                     set_lr(optimizer, (args.lr - args.lr_warmup) * (iteration / args.warmup_until) + args.lr_warmup)
@@ -137,7 +133,7 @@ def train(cfg):
                 optimizer.zero_grad()
 
                 # Network forward
-                batched_data = to_cuda(batched_data)
+                batched_data = torch_utils.to_cuda(batched_data)
                 output_dict = model(batched_data)
                 
                 #print(output_dict.keys())
@@ -204,12 +200,12 @@ def evaluation(model, val_loader, evaluator: Evaluator, logger: SGMatchLogger, e
     result_dict_avgs = {k: [] for k in eval_types}
     with torch.no_grad():
         for idx, batched_data in enumerate(val_loader):
-            batched_data = to_cuda(batched_data)
+            batched_data = torch_utils.to_cuda(batched_data)
             output_dict = model(batched_data, early_stop=True)
             batched_data = torch_utils.release_cuda(batched_data)
             output_dict = torch_utils.release_cuda(output_dict)
             result_dict = evaluator(output_dict, batched_data)
-            result_dict = release_cuda(result_dict)
+            result_dict = torch_utils.release_cuda(result_dict)
             print("\rEvaluation on going ... {:3.2f}%".format((idx+1)/eval_num*100), end='')
             for k in result_dict_avgs:
                 result_dict_avgs[k].append(result_dict[k])

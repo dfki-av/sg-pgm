@@ -26,7 +26,7 @@ from modules.pointnet.pointnet import PointNetfeat
 
 from torch_geometric.nn import  max_pool_x, GATv2Conv, knn_graph
 from torch_geometric.utils import to_dense_batch
-from utils.pointcloud import *
+#from utils.pointcloud import *
 
 
 class SGPGM_GeoTransformer(nn.Module):
@@ -43,7 +43,7 @@ class SGPGM_GeoTransformer(nn.Module):
         if self.use_ptfusion:
             self.model_name += "_ptfuse"
         if self.use_sgfusion:
-            self.model_name += "_sgfuse"
+            self.model_name += "_sgfuse" # It has no learnale parameters, anyway...
         if self.use_topk:
             self.model_name += "_topk"
 
@@ -232,7 +232,7 @@ class SGPGM_GeoTransformer(nn.Module):
 
         output_dict['sg_matches_sparse'] = sg_matches_sparse
 
-        if early_stop:
+        if early_stop: # Since we only train for graph matching, we can stop here.
             output_dict['ref_feats_f'] = ref_feats_f
             output_dict['src_feats_f'] = src_feats_f
             output_dict['ref_insts_f'] = ref_insts_f
@@ -420,14 +420,17 @@ class SGPGM_GeoTransformer(nn.Module):
         return pooled_pt_emb_batched
 
     def save_weights(self, root: str, epoch: int, iteration: int):
-        
+        all_state_dict = self.state_dict()
+        sg_pgm_state_dict = {}
+        for key in all_state_dict.keys():
+            if 'backbone' not in key and 'transformer' not in key and 'optimal_transport' not in key:
+                sg_pgm_state_dict[key] = all_state_dict[key]
         path = os.path.join(root, self.model_name + '_' + str(epoch) + '_' + str(iteration) + '.pth')
-        torch.save(self.state_dict(), path)
+        torch.save(sg_pgm_state_dict, path)
     
     def load_weights(self, path_sgm: str, path_geo,report: bool = False):
         state_dict_sgm = torch.load(path_sgm)
         state_dict_geo = torch.load(path_geo)['model']
-        #print(state_dict_geo.keys())
         model_dict = self.state_dict()
         model_dict.update(state_dict_sgm)
         model_dict.update(state_dict_geo)
@@ -441,10 +444,8 @@ class SGPGM_GeoTransformer(nn.Module):
         state_dict = torch.load(path)
         test_dict = {}
         for key in state_dict.keys():
-            print(key)
             if 'backbone' not in key and 'transformer' not in key and 'optimal_transport' not in key:
                 test_dict[key] = state_dict[key]
-        print(test_dict.keys())
         torch.save(test_dict, 'best_model.pth')
         self.load_state_dict(state_dict)
         if report:
@@ -521,7 +522,7 @@ class SGPGM_PointNet(nn.Module):
         output_dict = {}
         self.batch_size = data_dict['batch_size']
 
-        # 2. Scene Graph Matching
+        # 1. Scene Graph Matching
         sg_pair = data_dict['sg']
         sg_emb_q = self.sgfeat_net(sg_pair.x_q, sg_pair.edge_index_q, sg_pair.edge_attr_q)
         sg_emb_t = self.sgfeat_net(sg_pair.x_t, sg_pair.edge_index_t, sg_pair.edge_attr_t)
@@ -629,7 +630,6 @@ class SGPGM_PointNet(nn.Module):
     def load_weights(self, path: str, report: bool = False):
         """ Loads weights from a compressed save file. """
         state_dict = torch.load(path)
-        #print(state_dict.keys())
         self.load_state_dict(state_dict)
         if report:
             for name, param in state_dict.items():

@@ -2,11 +2,9 @@ from functools import partial
 import math
 import numpy as np
 import torch
-import random
 from modules.ops import grid_subsample, radius_search
 from data.torch_utils import build_dataloader
-from torch_geometric.data import Batch, Data
-from utils.pointcloud import *
+from torch_geometric.data import Batch
 import torch
 
 
@@ -287,8 +285,9 @@ def build_dataloader_stack_mode(
 
 def get_dataloader(train_dataset, val_dataset, cfg, args):
 
+    '''
     if isinstance(train_dataset, torch.utils.data.IterableDataset):
-        neighbor_limits =cfg.dataset.neighbor_limits
+        neighbor_limits = cfg.dataset.neighbor_limits
     else:
         neighbor_limits = calibrate_neighbors_stack_mode(
         train_dataset,
@@ -297,8 +296,8 @@ def get_dataloader(train_dataset, val_dataset, cfg, args):
         cfg.backbone.init_voxel_size,
         cfg.backbone.init_radius
     )
-
-    print(neighbor_limits)
+    '''
+    neighbor_limits = cfg.dataset.neighbor_limits
 
     train_loader = build_dataloader_stack_mode(
         train_dataset,
@@ -312,7 +311,7 @@ def get_dataloader(train_dataset, val_dataset, cfg, args):
         shuffle=True,
         distributed=False,
         reproducibility=args.reproducibility,
-        point_limits=args.max_c_points
+        point_limits=cfg.dataset.max_c_points
     )
 
     val_loader = build_dataloader_stack_mode(
@@ -327,7 +326,7 @@ def get_dataloader(train_dataset, val_dataset, cfg, args):
         shuffle=False,
         distributed=False,
         reproducibility=args.reproducibility,
-        point_limits=args.max_c_points
+        point_limits=cfg.dataset.max_c_points
     )
     return train_loader, val_loader
 
