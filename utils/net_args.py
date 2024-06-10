@@ -22,7 +22,7 @@ def parse_args(argv=None):
     # Basic Settings
     parser.add_argument('--config', type=str, default="./data/sg_pgm.json", help='Configuration to be loaded.')
     parser.add_argument('--dataset_root', type=str, default="/home/xie/Documents/datasets/3RScan", help='Path for load dataset.')
-    parser.add_argument('--dataset', choices=['sgm', 'sgm_tar', 'sgm_pointnet'], default='sgm', help='Path for load dataset.')
+    parser.add_argument('--dataset', choices=['sgm', 'sgm_tar', 'sgm_pointnet'], default='sgm', help='Which dataset to use.')
     parser.add_argument('--num_workers', default=12, type=int, help='')
     parser.add_argument('--device',  choices=['cuda', 'cpu'], default='cuda', help='Device to train on.' )
     parser.add_argument('--reproducibility', default=True, action='store_true', help='Set true if you want to reproduct the almost same results as given in the ablation study.') 
@@ -34,7 +34,7 @@ def parse_args(argv=None):
     parser.add_argument('--save_folder', type=str, default="./weights", help='Path for saving training weights.')
     parser.add_argument('--log_root', type=str, default='./logs', help='Path for saving training logs.')
     parser.add_argument('--interrupt', type=bool, default=True, help='Save weights when interreupted.')
-    parser.add_argument('--pretrained_3dmatch', type=str, default="./weights/geotransformer-3dmatch.pth.tar", help='Path for pretrained weights on 3dmatch.')
+    parser.add_argument('--pretrained_3dmatch', type=str, default="./weights/geotransformer-3dmatch.pth.tar", help='Path for pretrained GeoTr weights on 3dmatch.')
 
     # Inference Settings
     parser.add_argument('--trained_model', type=str, default=None, help='Path of the trained weights.')
@@ -42,6 +42,10 @@ def parse_args(argv=None):
     # Overlap Evaluation
     parser.add_argument('--at3', default=True, action='store_true', help='Whether to use overlap_score_at3 evaluation.')
     
+    # Data Generate and Evaluation 3D Scene Graph with Dynamic
+    parser.add_argument('--vis', default=False, action='store_true', help='visualize results or not.')
+    parser.add_argument('--dynamics',  choices=['sub2rescan', 'sub2scan', 'sub2sub'], default='sub2scan', help='Which sort of dynamics you what to test on.' )
+    parser.add_argument('--split',  choices=['train', 'val'], default='val', help='Data split.' )
 
     args = parser.parse_args(argv)
 

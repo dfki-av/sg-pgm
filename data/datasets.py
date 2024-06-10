@@ -54,9 +54,8 @@ class Scan3RDataset_pointnet(torch.utils.data.Dataset):
         self.subscans_scenes_dir = osp.join(self.subscans_dir, 'scenes')
         self.subscans_files_dir = osp.join(self.subscans_dir, 'files')
 
-        self.mode = 'orig' #if self.split == 'train' else cfg.val.data_mode
+        self.mode = 'orig'
         self.anchor_data_filename = os.path.join(self.subscans_files_dir, '{}/anchors{}_{}.json'.format(self.mode, self.anchor_type_name, split))
-        #"anchors_subscan_anchors_w_wo_overlap_val.json"
         
         self.anchor_data = common.load_json(self.anchor_data_filename)
         random.shuffle(self.anchor_data)
@@ -197,12 +196,6 @@ class Scan3RDataset_pointnet(torch.utils.data.Dataset):
         
         anchor_obj_ids = [anchor_obj_id for anchor_obj_id in anchor_obj_ids if anchor_obj_id != 0]
         anchor_obj_ids = [anchor_obj_id for anchor_obj_id in anchor_obj_ids if anchor_obj_id in src_object_ids and anchor_obj_id in ref_object_ids]
-        
-        '''if self.split == 'train':#TODO: What is this????
-            anchor_cnt = 2 if int(0.3 * len(anchor_obj_ids)) < 1 else int(0.3 * len(anchor_obj_ids))
-            anchor_obj_ids = anchor_obj_ids[:anchor_cnt]'''
-        
-        #print("after", anchor_obj_ids)
 
         src_edges = src_data_dict['edges']
         ref_edges = ref_data_dict['edges']
@@ -213,7 +206,6 @@ class Scan3RDataset_pointnet(torch.utils.data.Dataset):
         edges = torch.cat([torch.from_numpy(src_edges), torch.from_numpy(ref_edges)])
 
         src_object_id2idx = src_data_dict['object_id2idx']
-        #print("src object id2idx", src_object_id2idx)
         e1i_idxs = np.array([src_object_id2idx[anchor_obj_id] for anchor_obj_id in anchor_obj_ids]) # e1i
         e1j_idxs = np.array([src_object_id2idx[object_id] for object_id in src_data_dict['objects_id'] if object_id not in anchor_obj_ids]) # e1j
         
@@ -401,7 +393,7 @@ class Scan3RDataset(torch.utils.data.Dataset):
         self.aug_noise = augmentation_noise
         self.aug_rotation = augmentation_rotation
         self.augmentation_translation = augmentation_translation
-        #self.predicted = False
+        self.predicted = False
         self.label_file_name = 'labels.instances.align.annotated.v2.ply' if not self.predicted else 'inseg_filtered.ply'
 
         self.debug = debug
@@ -474,17 +466,12 @@ class Scan3RDataset(torch.utils.data.Dataset):
         tot_object_points = torch.cat([torch.from_numpy(src_object_points), torch.from_numpy(ref_object_points)]).type(torch.FloatTensor)
         #print(src_data_dict['objects_cat'])
         if self.predicted:
-            #src_fake_object_attr = np.asarray([project_to_binary_dimension(i, 164) for i in src_data_dict['objects_cat']])
-            #ref_fake_object_attr = np.asarray([project_to_binary_dimension(i, 164) for i in ref_data_dict['objects_cat']])
-            #tot_bow_vec_obj_attr_feats = torch.cat([torch.from_numpy(src_fake_object_attr), torch.from_numpy(ref_fake_object_attr)])
             zeros_to_pad = 164-41
             src_fake_object_attr = torch.from_numpy(src_data_dict['bow_vec_object_edge_feats'])
             ref_fake_object_attr = torch.from_numpy(ref_data_dict['bow_vec_object_edge_feats'])
             src_fake_object_attr = torch.cat([src_fake_object_attr, torch.zeros(src_fake_object_attr.size(0), zeros_to_pad)], dim=1)
             ref_fake_object_attr = torch.cat([ref_fake_object_attr, torch.zeros(ref_fake_object_attr.size(0), zeros_to_pad)], dim=1)
             tot_bow_vec_obj_attr_feats =  torch.cat([src_fake_object_attr, ref_fake_object_attr])
-            #print(tot_bow_vec_obj_attr_feats.shape)
-            #tot_bow_vec_obj_attr_feats = torch.cat([torch.zeros(len(src_data_dict['objects_cat']), 164), torch.zeros(len(ref_data_dict['objects_cat']), 164)])
         else:
             tot_bow_vec_obj_attr_feats = torch.cat([torch.from_numpy(src_data_dict['bow_vec_object_attr_feats']), 
                                                 torch.from_numpy(ref_data_dict['bow_vec_object_attr_feats'])])
@@ -532,15 +519,6 @@ class Scan3RDataset(torch.utils.data.Dataset):
         
         sg_match = np.vstack((np.asarray([i - src_obj_count for i in e2i_idxs]), np.asarray([i for i in e1i_idxs]))).T
         out_dict['sg_match'] = torch.from_numpy(sg_match)
-
-        '''
-
-        pcd1 = make_open3d_point_cloud(ref_points)
-        pcd2 = make_open3d_point_cloud(xyz_q_np)
-        pcd1.estimate_normals()
-        pcd2.estimate_normals()
-        draw_registration_result(pcd1, pcd2, np.identity(4), recolor=True)
-        '''
 
         if self.use_augmentation:
             rotation = np.identity(3)
@@ -636,7 +614,6 @@ class Scan3RDataset_Dynamics(torch.utils.data.Dataset):
         self.mode = 'orig' #if self.split == 'train' else cfg.val.data_mode
 
         self.anchor_data_filename = os.path.join(self.subscans_files_dir, '{}/anchors_{}_{}.json'.format(self.mode, self.anchor_type_name, split))
-        print(self.anchor_data_filename)
         #self.anchor_data_filename = os.path.join(self.subscans_files_dir, '{}/anchors_{}.json'.format(self.mode, split))
         
         self.anchor_data = common.load_json(self.anchor_data_filename)
@@ -650,7 +627,8 @@ class Scan3RDataset_Dynamics(torch.utils.data.Dataset):
         self.predicted = False
         self.label_file_name = 'labels.instances.align.annotated.v2.ply' if not self.predicted else 'inseg_filtered.ply'
 
-        '''self.meta_file = common.load_json(os.path.join(self.scans_files_dir, '3RScan.json'))
+        
+        self.meta_file = common.load_json(os.path.join(self.scans_files_dir, '3RScan.json'))
         self.meta_dict = {}
         for meta_ele in self.meta_file:
             key = meta_ele['reference']
@@ -670,7 +648,8 @@ class Scan3RDataset_Dynamics(torch.utils.data.Dataset):
         print(len(self.anchor_data))
 
         self.filter_anchors = []
-        self.used_src_scans = []'''
+        self.used_src_scans = []
+        
     
     def _augment_point_cloud(self, ref_points, src_points, rotation, translation, split):
         r"""Augment point clouds.
@@ -829,16 +808,6 @@ class Scan3RDataset_Dynamics(torch.utils.data.Dataset):
         
         sg_match = np.vstack((np.asarray([i - src_obj_count for i in e2i_idxs]), np.asarray([i for i in e1i_idxs]))).T
         out_dict['sg_match'] = torch.from_numpy(sg_match)
-
-        
-        '''
-        pcd1 = make_open3d_point_cloud(ref_points)
-        pcd2 = make_open3d_point_cloud(xyz_q_np)
-        pcd1.estimate_normals()
-        pcd2.estimate_normals()
-        draw_registration_result(pcd1, pcd2, np.identity(4), recolor=True)
-        '''
-        
 
         if self.use_augmentation:
             rotation = np.identity(3)
